@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Outfit Studio</title>
+<style>
+:root {
+  --bg: #f7f8fb;
+  --card: #ffffff;
+  --ink: #1f2430;
+  --muted: #6b7280;
+  --accent: #4f7cff;
+  --accent2: #eef3ff;
+  --shadow: 0 10px 30px rgba(31,36,48,.08);
+}
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+}
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+}
+.hidden {
+  display: none !important;
+}
+
+/* LOGIN SCREEN */
+.login {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px;
+  max-width: 430px;
+  margin: 0 auto;
+}
+.login h1 {
+  font-size: 28px;
+  margin: 0 0 6px;
+}
+.login h1 span {
+  color: var(--accent);
+}
+.login p {
+  color: var(--muted);
+  margin: 0 0 26px;
+  font-size: 14px;
+}
+.field {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-size: 16px;
+  background: transparent;
+  color: var(--ink);
+}
+.btn {
+  width: 100%;
+  border: 0;
+  border-radius: 18px;
+  padding: 16px;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(79,124,255,.28);
+}
+.btn:active {
+  transform: scale(.98);
+}
+.note {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 14px;
+}
+
+/* MAIN HEADER */
+header {
+  padding: 16px 20px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+h1 span {
+  color: var(--accent);
+}
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  cursor: pointer;
+}
+.icon-btn:active {
+  transform: scale(.94);
+}
+
+/* STAGE & CANVAS (768x1024 Ratio -> 3:4) */
+.stage {
+  flex: 1;
+  position: relative;
+  padding: 6px 18px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.canvas {
+  position: relative;
+  width: 100%;
+  max-width: 330px;
+  aspect-ratio: 3 / 4; /* Rasio 768:1024 */
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--accent2);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 99px;
+  z-index: 10;
+}
+
+/* FULL OVERLAY LAYERS */
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform .35s cubic-bezier(.22,1,.36,1), opacity .3s;
+}
+.layer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#bottomLayer { z-index: 1; }
+#topLayer { z-index: 2; }
+#outerLayer { z-index: 3; }
+
+.layer.enter-right { transform: translateX(100%); opacity: 0; }
+.layer.enter-left { transform: translateX(-100%); opacity: 0; }
+
+.empty-msg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  z-index: 0;
+}
+
+/* PAGER & CONTROLS */
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #d7dce6;
+  transition: .25s;
+}
+.dot.active {
+  width: 20px;
+  background: var(--accent);
+}
+.controls {
+  padding: 0 18px 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.tab {
+  border: 0;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 12px 6px;
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 0 24px 6px;
+}
+.actions {
+  padding: 6px 18px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+}
+.actions .btn {
+  flex: 1;
+  border-radius: 18px;
+  padding: 15px;
+  font-weight: 800;
+  font-size: 15px;
+}
+.btn.ghost {
+  background: var(--card);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+/* MODAL SHEETS */
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,24,35,.4);
+  display: none;
+  z-index: 20;
+}
+.sheet.open {
+  display: block;
+}
+.sheet-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--card);
+  border-radius: 26px 26px 0 0;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  animation: up .3s ease-out;
+  max-height: 85dvh;
+  overflow: auto;
+}
+@keyframes up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.sheet-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+/* UPLOAD GRID */
+.upload-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+.upload-card {
+  border: 1.5px dashed #d8deea;
+  border-radius: 18px;
+  padding: 14px;
+}
+.upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.upload-header b {
+  font-size: 15px;
+}
+.btn-upload-label {
+  background: var(--accent2);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.file-input {
+  display: none;
+}
+.thumb-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.thumb-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: #f4f6fb;
+  flex-shrink: 0;
+  border: 1px solid #e5e9f2;
+}
+.thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.thumb-del {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff4757;
+  color: #fff;
+  border: 0;
+  border-radius: 99px;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* HISTORY LIST */
+.saved-list {
+  max-height: 50vh;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+}
+.saved {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #eef0f5;
+  border-radius: 16px;
+}
+.saved .preview {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  background: #f4f6fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.saved-info {
+  flex: 1;
+}
+.saved-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.saved-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.saved-actions {
+  display: flex;
+  gap: 6px;
+}
+.saved-btn {
+  border: 0;
+  background: #f1f3f8;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%) translateY(20px);
+  background: #1f2430;
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-size: 13px;
+  opacity: 0;
+  transition: .3s;
+  z-index: 30;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginScreen">
+ <h1>Outfit <span>Studio</span></h1>
+ <p>Masuk dengan nama akun untuk menyimpan koleksi pakaian Anda.</p>
+ <div class="field">
+  <label>Nama Akun</label>
+  <input id="usernameInput" placeholder="Contoh: rina123" autocomplete="off">
+ </div>
+ <button class="btn primary" id="loginBtn">Masuk</button>
+ <div class="note">Data akan disimpan secara otomatis di perangkat ini.</div>
+</div>
+
+<!-- APP UTAMA -->
+<div class="app hidden" id="mainScreen">
+ <header>
+  <h1>Outfit <span>Studio</span></h1>
+  <div style="display:flex;gap:8px">
+   <button class="icon-btn" id="uploadBtn" title="Unggah PNG">＋</button>
+   <button class="icon-btn" id="historyBtn" title="Koleksi Tersimpan">🕘</button>
+   <button class="icon-btn" id="logoutBtn" title="Keluar">⎋</button>
+  </div>
+ </header>
+
+ <div class="stage">
+  <div class="canvas" id="canvas">
+   <div class="badge">768 × 1024</div>
+   <div class="empty-msg" id="emptyMsg">
+    Belum ada item.<br>Klik tombol <b>＋</b> di atas untuk mengunggah gambar PNG transparan.
+   </div>
+   <div class="layer" id="bottomLayer"></div>
+   <div class="layer" id="topLayer"></div>
+   <div class="layer" id="outerLayer"></div>
+  </div>
+ </div>
+
+ <div class="pager" id="pager"></div>
+
+ <div class="controls">
+  <button class="tab active" data-cat="outer">Outer</button>
+  <button class="tab" data-cat="top">Kaos</button>
+  <button class="tab" data-cat="bottom">Celana</button>
+ </div>
+
+ <div class="hint">Usap / Geser kiri atau kanan pada gambar untuk mengganti item</div>
+
+ <div class="actions">
+  <button class="btn ghost" id="randomBtn">🎲 Acak</button>
+  <button class="btn primary" id="saveBtn">💾 Simpan</button>
+ </div>
+</div>
+
+<!-- MODAL UPLOAD -->
+<div class="sheet" id="uploadSheet">
+ <div class="sheet-card">
+  <div class="sheet-head">
+   <h2>Manajemen Item PNG</h2>
+   <button class="icon-btn" id="closeUploadBtn">✕</button>
+  </div>
+  <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">
+   Unggah gambar PNG transparan berukuran <b>768×1024</b> agar posisi pakaian presisi di kanvas.
+  </p>
+
+  <div class="upload-grid">
+   <!-- Outer -->
+   <div class="upload-card">
+    <div class="upload-header">
+     <b>Outer (Jaket / Hoodie)</b>
+     <label class="btn-upload-label">
+      + Unggah <input type="file" class="file-input" accept="image/png,image/webp" multiple id="fileOuter">
+     </label>
+    </div>
+    <div class="thumb-list" id="thumbsOuter"></div>
+   </div>
+
+   <!-- Kaos -->
+   <div class="upload-card">
+    <div class="upload-header">
+     <b>Kaos / Dalaman</b>
+     <label class="btn-upload-label">
+      + Unggah <input type="file" class="file-input" accept="image/png,image/webp" multiple id="fileTop">
+     </label>
+    </div>
+    <div class="thumb-list" id="thumbsTop"></div>
+   </div>
+
+   <!-- Celana -->
+   <div class="upload-card">
+    <div class="upload-header">
+     <b>Celana / Bawahan</b>
+     <label class="btn-upload-label">
+      + Unggah <input type="file" class="file-input" accept="image/png,image/webp" multiple id="fileBottom">
+     </label>
+    </div>
+    <div class="thumb-list" id="thumbsBottom"></div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL RIWAYAT -->
+<div class="sheet" id="historySheet">
+ <div class="sheet-card">
+  <div class="sheet-head">
+   <h2>Kombinasi Tersimpan</h2>
+   <button class="icon-btn" id="closeHistoryBtn">✕</button>
+  </div>
+  <div class="saved-list" id="savedList"></div>
+ </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+const CATS = ["outer", "top", "bottom"];
+const sessionKey = "outfitStudioSession";
+
+let currentUser = null;
+let items = { outer: [], top: [], bottom: [] };
+const state = { outer: 0, top: 0, bottom: 0, active: "outer" };
+
+const layerEls = {
+  outer: document.getElementById("outerLayer"),
+  top: document.getElementById("topLayer"),
+  bottom: document.getElementById("bottomLayer")
+};
+
+const pagerEl = document.getElementById("pager");
+const canvasEl = document.getElementById("canvas");
+const emptyMsg = document.getElementById("emptyMsg");
+const toastBox = document.getElementById("toastEl");
+const loginScreen = document.getElementById("loginScreen");
+const mainScreen = document.getElementById("mainScreen");
+const usernameInput = document.getElementById("usernameInput");
+
+function accountKeys(u) {
+  return {
+    items: `outfitStudioItems_v2_${u}`,
+    outfits: `outfitStudioOutfits_v2_${u}`
+  };
+}
+
+function loadAccountData(u) {
+  const k = accountKeys(u);
+  try {
+    items = JSON.parse(localStorage.getItem(k.items) || '{"outer":[],"top":[],"bottom":[]}');
+  } catch(e) {
+    items = { outer: [], top: [], bottom: [] };
+  }
+  state.outer = 0; state.top = 0; state.bottom = 0; state.active = "outer";
+}
+
+function saveAccountItems() {
+  if (!currentUser) return;
+  try {
+    localStorage.setItem(accountKeys(currentUser).items, JSON.stringify(items));
+  } catch(e) {
+    showToast("Gagal menyimpan: Ukuran memori penuh");
+  }
+}
+
+function getSavedOutfits() {
+  if (!currentUser) return [];
+  try {
+    return JSON.parse(localStorage.getItem(accountKeys(currentUser).outfits) || "[]");
+  } catch(e) {
+    return [];
+  }
+}
+
+function saveSavedOutfits(arr) {
+  if (currentUser) {
+    localStorage.setItem(accountKeys(currentUser).outfits, JSON.stringify(arr));
+  }
+}
+
+function render(anim = false, dir = 1) {
+  let hasAnyItem = false;
+
+  for (const c of CATS) {
+    const list = items[c] || [];
+    if (list.length > 0) {
+      hasAnyItem = true;
+      if (state[c] >= list.length) state[c] = 0;
+      const it = list[state[c]];
+      layerEls[c].innerHTML = `<img src="${it.img}" alt="${it.name}">`;
+    } else {
+      layerEls[c].innerHTML = "";
+    }
+  }
+
+  emptyMsg.style.display = hasAnyItem ? "none" : "flex";
+
+  const activeList = items[state.active] || [];
+  if (activeList.length > 0) {
+    pagerEl.innerHTML = activeList.map((_, idx) => 
+      `<div class="dot ${idx === state[state.active] ? "active" : ""}"></div>`
+    ).join("");
+  } else {
+    pagerEl.innerHTML = "";
+  }
+
+  document.querySelectorAll(".tab").forEach(b => {
+    b.classList.toggle("active", b.dataset.cat === state.active);
+  });
+
+  if (anim && activeList.length > 0) {
+    const el = layerEls[state.active];
+    el.classList.add(dir > 0 ? "enter-right" : "enter-left");
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.classList.remove("enter-right", "enter-left");
+      });
+    });
+  }
+}
+
+function swipe(d) {
+  const list = items[state.active] || [];
+  if (list.length === 0) return;
+  state[state.active] = (state[state.active] + d + list.length) % list.length;
+  render(true, d);
+}
+
+// SWIPE TOUCH & CLICK GESTURE
+let sx = null, sy = null;
+canvasEl.addEventListener("touchstart", e => {
+  sx = e.touches[0].clientX;
+  sy = e.touches[0].clientY;
+}, { passive: true });
+
+canvasEl.addEventListener("touchend", e => {
+  if (sx === null) return;
+  const dx = e.changedTouches[0].clientX - sx;
+  const dy = e.changedTouches[0].clientY - sy;
+  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+    swipe(dx < 0 ? 1 : -1);
+  }
+  sx = null;
+}, { passive: true });
+
+canvasEl.addEventListener("click", e => {
+  const r = canvasEl.getBoundingClientRect();
+  swipe(e.clientX > r.left + r.width / 2 ? 1 : -1);
+});
+
+document.querySelectorAll(".tab").forEach(b => {
+  b.onclick = () => {
+    state.active = b.dataset.cat;
+    render();
+  };
+});
+
+function showToast(m) {
+  toastBox.textContent = m;
+  toastBox.classList.add("show");
+  setTimeout(() => toastBox.classList.remove("show"), 1800);
+}
+
+// LOGIN & LOGOUT
+function login() {
+  const name = usernameInput.value.trim().toLowerCase();
+  if (!name) {
+    showToast("Isi nama akun terlebih dahulu");
+    return;
+  }
+  currentUser = name;
+  localStorage.setItem(sessionKey, name);
+  loadAccountData(name);
+  loginScreen.classList.add("hidden");
+  mainScreen.classList.remove("hidden");
+  render();
+  showToast(`Selamat datang, ${name} 👋`);
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem(sessionKey);
+  mainScreen.classList.add("hidden");
+  loginScreen.classList.remove("hidden");
+  usernameInput.value = "";
+  showToast("Berhasil keluar");
+}
+
+document.getElementById("loginBtn").onclick = login;
+usernameInput.addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+document.getElementById("logoutBtn").onclick = logout;
+
+const existingSession = localStorage.getItem(sessionKey);
+if (existingSession) {
+  usernameInput.value = existingSession;
+  login();
+}
+
+// UPLOAD & PROSES GAMBAR (STANDARD 768x1024)
+const uploadSheet = document.getElementById("uploadSheet");
+document.getElementById("uploadBtn").onclick = () => {
+  renderThumbnails();
+  uploadSheet.classList.add("open");
+};
+document.getElementById("closeUploadBtn").onclick = () => uploadSheet.classList.remove("open");
+uploadSheet.addEventListener("click", e => {
+  if (e.target === uploadSheet) uploadSheet.classList.remove("open");
+});
+
+function processAndSaveFiles(cat, files) {
+  if (!files || files.length === 0) return;
+  let count = 0;
+
+  Array.from(files).forEach(file => {
+    if (!/image\/(png|webp)/.test(file.type)) {
+      showToast("Gunakan file format PNG transparan");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize canvas ke standar 768 x 1024
+        const targetW = 768;
+        const targetH = 1024;
+        const cv = document.createElement("canvas");
+        cv.width = targetW;
+        cv.height = targetH;
+        const ctx = cv.getContext("2d");
+
+        // Pertahankan rasio asli di dalam frame 768x1024
+        const scale = Math.min(targetW / img.width, targetH / img.height);
+        const nw = img.width * scale;
+        const nh = img.height * scale;
+        const nx = (targetW - nw) / 2;
+        const ny = (targetH - nh) / 2;
+
+        ctx.drawImage(img, nx, ny, nw, nh);
+        const dataUrl = cv.toDataURL("image/png");
+
+        if (!items[cat]) items[cat] = [];
+        items[cat].push({
+          id: Date.now() + Math.random(),
+          name: `${cat} #${items[cat].length + 1}`,
+          img: dataUrl
+        });
+
+        count++;
+        if (count === files.length) {
+          saveAccountItems();
+          renderThumbnails();
+          render(true, 1);
+          showToast("Item berhasil ditambahkan ✨");
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById("fileOuter").onchange = e => processAndSaveFiles("outer", e.target.files);
+document.getElementById("fileTop").onchange = e => processAndSaveFiles("top", e.target.files);
+document.getElementById("fileBottom").onchange = e => processAndSaveFiles("bottom", e.target.files);
+
+function renderThumbnails() {
+  for (const c of CATS) {
+    const container = document.getElementById(`thumbs${c.charAt(0).toUpperCase() + c.slice(1)}`);
+    const list = items[c] || [];
+    container.innerHTML = list.map(item => `
+      <div class="thumb-item">
+        <img src="${item.img}">
+        <button class="thumb-del" onclick="deleteItem('${c}', ${item.id})">✕</button>
+      </div>
+    `).join("");
+  }
+}
+
+window.deleteItem = function(cat, id) {
+  items[cat] = items[cat].filter(i => i.id !== id);
+  saveAccountItems();
+  renderThumbnails();
+  render();
+  showToast("Item dihapus");
+};
+
+// ACAK & SIMPAN COMBINATION
+const historySheet = document.getElementById("historySheet");
+const savedListEl = document.getElementById("savedList");
+
+document.getElementById("randomBtn").onclick = () => {
+  for (const c of CATS) {
+    if (items[c].length > 0) {
+      state[c] = Math.floor(Math.random() * items[c].length);
+    }
+  }
+  render(true, 1);
+  showToast("Kombinasi acak dibuat ✨");
+};
+
+document.getElementById("saveBtn").onclick = () => {
+  const currentSaved = getSavedOutfits();
+  const outfitObj = {
+    id: Date.now(),
+    name: `Outfit #${currentSaved.length + 1}`,
+    indices: { outer: state.outer, top: state.top, bottom: state.bottom }
+  };
+  currentSaved.unshift(outfitObj);
+  saveSavedOutfits(currentSaved);
+  showToast("Outfit berhasil disimpan 💾");
+};
+
+function renderSavedList() {
+  const list = getSavedOutfits();
+  if (list.length === 0) {
+    savedListEl.innerHTML = `<div class="saved-meta" style="text-align:center;padding:20px;">Belum ada kombinasi outfit yang disimpan.</div>`;
+    return;
+  }
+
+  savedListEl.innerHTML = list.map(o => `
+    <div class="saved">
+      <div class="saved-info">
+        <div class="saved-name">${o.name}</div>
+      </div>
+      <div class="saved-actions">
+        <button class="saved-btn" onclick="applyOutfit(${o.indices.outer}, ${o.indices.top}, ${o.indices.bottom})">Gunakan</button>
+        <button class="saved-btn" style="color:#ff4757;" onclick="deleteOutfit(${o.id})">Hapus</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.applyOutfit = function(outerIdx, topIdx, bottomIdx) {
+  state.outer = outerIdx || 0;
+  state.top = topIdx || 0;
+  state.bottom = bottomIdx || 0;
+  render(true, 1);
+  historySheet.classList.remove("open");
+  showToast("Outfit diterapkan ✨");
+};
+
+window.deleteOutfit = function(id) {
+  const list = getSavedOutfits().filter(o => o.id !== id);
+  saveSavedOutfits(list);
+  renderSavedList();
+  showToast("Outfit dihapus");
+};
+
+document.getElementById("historyBtn").onclick = () => {
+  renderSavedList();
+  historySheet.classList.add("open");
+};
+document.getElementById("closeHistoryBtn").onclick = () => historySheet.classList.remove("open");
+historySheet.addEventListener("click", e => {
+  if (e.target === historySheet) historySheet.classList.remove("open");
+});
+
+if (currentUser) render();
+</script>
+</body>
+</html>
